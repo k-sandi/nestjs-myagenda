@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, HttpCode, HttpStatus, Injectable, Req } from "@nestjs/common";
 import { PrismaService } from "./../prisma/prisma.service";
 import { AuthDto, SigninDto } from "./dto";
 import * as argon from 'argon2';
@@ -29,26 +29,39 @@ export class AuthService {
                     group_id: 3,
                     createdBy: 1
                 },
-                // select: {
-                //     id: true,
-                //     email: true,
-                //     createdAt: true,
-                // }
             })
 
-            // delete user.hash
-            // delete user.hash // remove hash (password hashed) object from the respond
-
-            // Return the saved user
-            // return user;
-            return this.signToken(user.id, user.email)
+            delete user.hash
+            delete user.refresh_token
+            delete user.remember_token
+            delete user.jwt_token
+            delete user.is_deleted
+            
+            const resp = {
+                status: true,
+                statusCode: HttpStatus.CREATED,
+                message: 'User has been created',
+                data: [
+                    user
+                ]
+            }
+            return resp
         } catch (error) {
             if (error instanceof PrismaClientKnownRequestError) {
                 if (error.code === 'P2002') { // the code for unique field
-                    throw new ForbiddenException('Crendential Taken')
+                    const resp = {
+                        status: false,
+                        statusCode: HttpStatus.FORBIDDEN,
+                        message: 'User has been taken',
+                        data: []
+                    }
+                    // console.log("error.code: ", error.code);
+                    throw new ForbiddenException(resp)
+                    // throw new BadRequestException(resp)
                 }
             }
         }
+        
     }
 
     async signin(dto: SigninDto) {
@@ -97,9 +110,14 @@ export class AuthService {
             }
         );
 
-        return {
+        const resp = {
+            status: true,
+            statusCode: HttpStatus.OK,
+            message: 'Login Successfully. Your token available at bellow. Please, use the bearer authentication protokol before use that!',
             access_token: token,
         }
+
+        return resp
     }
 }
 
