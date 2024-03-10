@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, HttpCode, HttpStatus, Injectable, Req, UnauthorizedException } from "@nestjs/common";
 import { PrismaService } from "./../prisma/prisma.service";
-import { AuthDto, SigninDto } from "./dto";
+import { AuthDto, SigninDto, VerifyOtpDto } from "./dto";
 import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { JwtService } from "@nestjs/jwt";
@@ -128,6 +128,59 @@ export class AuthService {
         return this.signToken(user.id, user.email);
     }
 
+    async verifyOtp(dto: VerifyOtpDto){
+        const resp = {
+            status: true,
+            statusCode: HttpStatus.OK,
+            message: 'OTP matched',
+            data: []
+        }
+
+        // find the otp by userid with last request
+        const user_otp = await this.prisma.userOtp.findFirst({
+            where: {
+                otp: dto.otp,
+                userId: dto.user
+            }
+        })
+
+        if (!user_otp) {
+
+            resp.status = false
+            resp.statusCode = HttpStatus.FORBIDDEN
+            resp.message = 'Incorrect OTP'
+
+            throw new ForbiddenException(resp)
+        }
+
+        resp.data = [
+            {
+                user: dto.user,
+                otp: dto.otp
+            }
+        ]
+        return resp
+
+        // const date_ob = new Date();
+        // const date = ("0" + date_ob.getDate()).slice(-2);
+        // const d = ("0" + date_ob.getDate()).slice(-2);
+        // const m = ("0" + (date_ob.getMonth() + 1)).slice(-2);
+        // const y = date_ob.getFullYear();
+        // const h = date_ob.getHours();
+        // const i = date_ob.getMinutes();
+        // const s = date_ob.getSeconds();
+        // console.log("obj: ", date_ob);
+        // console.log("d: ", d);
+        // console.log("m: ", m);
+        // console.log("y: ", y);
+        // console.log("h: ", h);
+        // console.log("i: ", i);
+        // console.log("s: ", s);
+        // console.log(y + "-" + m + "-" + date);
+        // console.log(h + ":" + m);
+        
+    }
+
     async signToken(
         userId: number,
         email: string
@@ -157,5 +210,3 @@ export class AuthService {
         return resp
     }
 }
-
-// const service = new AuthService()
