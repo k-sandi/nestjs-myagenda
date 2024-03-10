@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, HttpCode, HttpStatus, Injectable, Req } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, HttpCode, HttpStatus, Injectable, Req, UnauthorizedException } from "@nestjs/common";
 import { PrismaService } from "./../prisma/prisma.service";
 import { AuthDto, SigninDto } from "./dto";
 import * as argon from 'argon2';
@@ -65,17 +65,38 @@ export class AuthService {
     }
 
     async signin(dto: SigninDto) {
+        
+        const resp = {
+            status: false,
+            statusCode: HttpStatus.OK,
+            message: '',
+            data: []
+        }
 
         // find the user by email
         const user = await this.prisma.user.findUnique({
             where: {
                 email: dto.email,
+                is_deleted: false
             },
         });
 
         // if user does not exist throw exception
         if (!user) {
-            throw new ForbiddenException('Credential incorrect')
+            
+            resp.statusCode = HttpStatus.FORBIDDEN
+            resp.message = 'Credential incorrect'
+
+            throw new ForbiddenException(resp)
+        }
+
+        // cek the use is active or not
+        if (user.is_active !== true) {
+            
+            resp.statusCode = HttpStatus.FORBIDDEN
+            resp.message = 'Inactive User'
+
+            throw new ForbiddenException(resp)
         }
 
         // compare password
@@ -83,7 +104,10 @@ export class AuthService {
 
         // if password incorrect theow exception
         if (!passMatches) {
-            throw new ForbiddenException('Credential incorrect')
+            resp.statusCode = HttpStatus.FORBIDDEN
+            resp.message = 'Credential incorrect'
+
+            throw new ForbiddenException(resp)
         }
 
         // send back the user
