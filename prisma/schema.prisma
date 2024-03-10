@@ -10,18 +10,44 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model UserGroup {
   id        Int      @id @default(autoincrement())
+  name String @db.VarChar(30)
+  level Int
+  desc String
+
+  is_deleted Boolean @default(false)
+  createdBy Int?
+  updatedBy Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  email String @unique
-  hash  String
+  users User[]
 
-  firstName String? //optional
-  lastName  String? //optional
+  @@map("user_groups")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name String @db.VarChar(100)
+  email String @db.VarChar(35) @unique
+  hash  String @db.VarChar(255)
+  remember_token String? @db.VarChar(255)
+  refresh_token String? @db.VarChar(255)
+  jwt_token String? @db.VarChar(255)
+
+  group_id Int
+
+  is_deleted Boolean @default(false)
+  createdBy Int?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   bookmarks Bookmark[]
+
+  userGroup UserGroup @relation(fields: [group_id], references: [id])
+
   @@map("users") // table name
 }
 

@@ -3,21 +3,21 @@ services:
   dev-db:
     image: postgres:13
     ports:
-      - 5434:5432
+      - 5436:5432
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: nest
+      POSTGRES_DB: myagenda_db
     networks:
       - freecodecamp
   test-db:
     image: postgres:13
     ports:
-      - 5435:5432
+      - 5437:5432
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: nest
+      POSTGRES_DB: myagenda_db
     networks:
       - freecodecamp
 networks:
