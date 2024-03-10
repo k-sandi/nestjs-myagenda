@@ -5,13 +5,15 @@ import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
+import { MailService } from "src/mail/mail.service";
 
 @Injectable()
 export class AuthService {
     constructor(
         private prisma: PrismaService,
         private jwt: JwtService,
-        private config: ConfigService
+        private config: ConfigService,
+        private mail: MailService,
     ) { }
 
     async signup(dto: AuthDto) {
@@ -31,6 +33,16 @@ export class AuthService {
                 },
             })
 
+            const otp_value = Math.floor(100000 + Math.random() * 900000)
+            const otp = await this.prisma.userOtp.create({
+                data: {
+                    userId: user.id,
+                    otp: otp_value.toString()
+                }
+            })
+
+            this.mail.sendEmail(user.email, 'Your One Time Password', otp_value.toString())
+
             delete user.hash
             delete user.refresh_token
             delete user.remember_token
@@ -42,7 +54,8 @@ export class AuthService {
                 statusCode: HttpStatus.CREATED,
                 message: 'User has been created',
                 data: [
-                    user
+                    user,
+                    otp
                 ]
             }
             return resp
